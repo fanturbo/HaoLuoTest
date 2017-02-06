@@ -1,16 +1,9 @@
 package com.example.xposedtest;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-
-import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
-import android.widget.EditText;
-import android.widget.TextView;
+
+import java.lang.reflect.Field;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
@@ -18,7 +11,7 @@ import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
-public class HookUtil implements IXposedHookLoadPackage{
+public class HookUtil implements IXposedHookLoadPackage {
 
     @Override
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
@@ -54,6 +47,96 @@ public class HookUtil implements IXposedHookLoadPackage{
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                 XposedBridge.log("success!!");
+
+                final Class<?> BaseResp = XposedHelpers.findClass("com.tencent.mm.sdk.modelbase.BaseResp", lpparam.classLoader);
+//                final Object baseResp =BaseResp.newInstance();
+
+                XposedHelpers.findAndHookMethod("cn.com.haoluo.www.wxapi.WXPayEntryActivity", lpparam.classLoader, "onResp", BaseResp, new XC_MethodHook() {
+
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        XposedBridge.log("param 0 before:" + param.args[0]);
+
+                        if (param.args[0] != null) {
+                            Field publicField = ReflectionUtils.getDeclaredField(param.args[0], "errCode");
+                            XposedBridge.log("----------errCode  name" + publicField.getName());
+                            XposedBridge.log("----------errCode  value" + ReflectionUtils.getFieldValue(param.args[0], "errCode"));
+                            ReflectionUtils.setFieldValue(param.args[0], "errCode", 0) ;
+                            Field[] fs = param.args[0].getClass().getFields();
+                            for (int i = 0; i < fs.length; i++) {
+                                Field f = fs[i];
+                                f.setAccessible(true); //设置些属性是可以访问的
+                                Object val = f.get(param.args[0]);//得到此属性的值
+                                String type = f.getType().toString();//得到此属性的类型
+                                XposedBridge.log("----------type  " + type);
+                                XposedBridge.log("----------name  " + f.getName());
+                                XposedBridge.log("----------val  " + val);
+                            }
+                        }
+                    }
+
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        Class clazz = param.thisObject.getClass();
+
+                    }
+                });
+
+                final Class<?> OnResponseExtraListener = XposedHelpers.findClass("cn.com.haoluo.www.features.extra.OnResponseExtraListener", lpparam.classLoader);
+
+                XposedHelpers.findAndHookMethod("cn.com.haoluo.www.manager.ContractManager", lpparam.classLoader, "shuttleNotificationWechat", String.class,OnResponseExtraListener, new XC_MethodHook() {
+
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        XposedBridge.log("shuttleNotificationWechat param 0 before:" + param.args[0]);
+                        param.args[0] = "60f9eaeeec3811e69fb100163e003adb";
+                        XposedBridge.log("shuttleNotificationWechat param 1 before:" + param.args[1]);
+                        Field[] fs = param.args[1].getClass().getFields();
+                        for (int i = 0; i < fs.length; i++) {
+                            Field f = fs[i];
+                            f.setAccessible(true); //设置些属性是可以访问的
+                            Object val = f.get(param.args[1]);//得到此属性的值
+                            String type = f.getType().toString();//得到此属性的类型
+                            XposedBridge.log("----------type  " + type);
+                            XposedBridge.log("----------name  " + f.getName());
+                            XposedBridge.log("----------val  " + val);
+                        }
+                    }
+
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        Class clazz = param.thisObject.getClass();
+
+                    }
+                });
+                final Class<?> PayFruitEntity = XposedHelpers.findClass("cn.com.haoluo.www.utils.PayFruitEntity", lpparam.classLoader);
+
+                XposedHelpers.findAndHookMethod("cn.com.haoluo.www.features.payment.ShuttlePaymentTool", lpparam.classLoader, "onEvent", PayFruitEntity, new XC_MethodHook() {
+
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        XposedBridge.log("onEvent param 0 before:" + param.args[0]);
+                        Field[] fs = param.args[0].getClass().getDeclaredFields();
+                        for (int i = 0; i < fs.length; i++) {
+                            Field f = fs[i];
+                            f.setAccessible(true); //设置些属性是可以访问的
+                            Object val = f.get(param.args[0]);//得到此属性的值
+                            String type = f.getType().toString();//得到此属性的类型
+                            XposedBridge.log("----------type  " + type);
+                            XposedBridge.log("----------name  " + f.getName());
+                            XposedBridge.log("----------val  " + val);
+                        }
+                    }
+
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        Class clazz = param.thisObject.getClass();
+
+                    }
+                });
+
+
+
                 Class<?> ShuttleLine = XposedHelpers.findClass("cn.com.haoluo.www.model.ShuttleLine", lpparam.classLoader);
                 final Object shuttleLine =ShuttleLine.newInstance();
 
@@ -66,48 +149,57 @@ public class HookUtil implements IXposedHookLoadPackage{
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                         Class clazz = param.thisObject.getClass();
                         XposedBridge.log("param 0 before:"+ param.args[0]);
-                        param.args[0] = 4;
-                        //给ShuttleLine参数设置Contract
+                        if((Integer)param.args[0] != 4) {
+//                            param.args[0] = 4;
+                            //给ShuttleLine参数设置Contract
 //                         param.args[1] = contract;
-                        XposedBridge.log("param 0 after:"+ param.args[0]);
-                        XposedBridge.log("param 1:"+ param.args[1]);
+                            XposedBridge.log("param 0 after:"+ param.args[0]);
+                            XposedBridge.log("param 1:"+ param.args[1]);
 
-                        if(param.args[1]!=null){
-                            Field[] fs = param.args[1].getClass().getDeclaredFields();
-                            for(int i = 0 ; i < fs.length; i++){
-                                Field f = fs[i];
-                                f.setAccessible(true); //设置些属性是可以访问的
-                                Object val = f.get(param.args[1]);//得到此属性的值
-                                String type = f.getType().toString();//得到此属性的类型
-                                XposedBridge.log("----------name  "+f.getName());
-                                XposedBridge.log("----------type  "+type);
-                                XposedBridge.log("----------val  "+val);
+                            if(param.args[1]!=null) {
+                                Field[] fs = param.args[1].getClass().getDeclaredFields();
+                                for (int i = 0; i < fs.length; i++) {
+                                    Field f = fs[i];
+                                    f.setAccessible(true); //设置些属性是可以访问的
+                                    Object val = f.get(param.args[1]);//得到此属性的值
+                                    String type = f.getType().toString();//得到此属性的类型
+                                    XposedBridge.log("----------name  " + f.getName());
+                                    XposedBridge.log("----------type  " + type);
+                                    XposedBridge.log("----------val  " + val);
 //                                Log.i("99999",contract+"");
-                                if(Contract.equals(f.getType())){
+                                    if (Contract.equals(f.getType())) {
 //                                    f.set(contract, contract);
-//                                    setNotAccessibleProperty(param.args[1], "contract", contract);
+                                        setNotAccessibleProperty(param.args[1], "contract", contract);
+                                    }
+                                    if ("status".equals(f.getName())) {
+                                        setNotAccessibleProperty(param.args[1], "status", 1);
+                                    }
+                                    if ("destAt".equals(f.getName())) {
+                                        setNotAccessibleProperty(param.args[1], "destAt", System.currentTimeMillis());
+                                    }
+                                    if ("deptAt".equals(f.getName())) {
+                                        setNotAccessibleProperty(param.args[1], "deptAt", System.currentTimeMillis()/1000);
+                                    }
+                                    if ("lineName".equals(f.getName())) {
+                                        // 待修改，因为线路为“回龙观东大街地铁--回龙观东大街地铁”时，会出现编码错误 已修改
+                                        setNotAccessibleProperty(param.args[1], "lineName", val);
+                                    }
                                 }
                             }
                         }else{
-                            param.args[1] = shuttleLine;
-                            Field[] fs = param.args[1].getClass().getDeclaredFields();
-                            for(int i = 0 ; i < fs.length; i++){
-                                Field f = fs[i];
-                                f.setAccessible(true); //设置些属性是可以访问的
-                                Object val = f.get(param.args[1]);//得到此属性的值
-                                String type = f.getType().toString();//得到此属性的类型
-                                XposedBridge.log("----------name  "+f.getName());
-                                XposedBridge.log("----------type  "+type);
-                                XposedBridge.log("----------val  "+val);
-//                                Log.i("99999",contract+"");
-                                if(Contract.equals(f.getType())){
-//                                    f.set(contract, contract);
-                                    setNotAccessibleProperty(param.args[1], "contract", contract);
-                                    XposedBridge.log("----------Contract name  "+f.getName());
-                                    XposedBridge.log("----------Contract type  "+type);
-                                    XposedBridge.log("----------Contract val  "+val);
+                            if(param.args[1]!=null) {
+                                Field[] fs = param.args[1].getClass().getDeclaredFields();
+                                for (int i = 0; i < fs.length; i++) {
+                                    Field f = fs[i];
+                                    f.setAccessible(true); //设置些属性是可以访问的
+                                    Object val = f.get(param.args[1]);//得到此属性的值
+                                    String type = f.getType().toString();//得到此属性的类型
+                                    XposedBridge.log("----------name  " + f.getName());
+                                    XposedBridge.log("----------type  " + type);
+                                    XposedBridge.log("----------val  " + val);
                                 }
                             }
+
                         }
                     }
 
@@ -117,14 +209,30 @@ public class HookUtil implements IXposedHookLoadPackage{
 
                     }
                 });
-                Class<?> ShuttleTicket = XposedHelpers.findClass("cn.com.haoluo.www.model.ShuttleTicket", lpparam.classLoader);
+              /*  Class<?> ShuttleTicket = XposedHelpers.findClass("cn.com.haoluo.www.model.ShuttleTicket", lpparam.classLoader);
                 Class<?> DisplayShuttleTicket = XposedHelpers.findClass("cn.com.haoluo.www.features.DisplayShuttleTicket", lpparam.classLoader);
                 XposedHelpers.findAndHookMethod(DisplayShuttleTicket, "display", ShuttleTicket, new XC_MethodHook() {
 
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                         Class clazz = param.thisObject.getClass();
-                        XposedBridge.log("display ShuttleTicket:"+ param.args[0]);
+                        //ticketColor
+                        if(param.args[0]!=null) {
+                            Field[] fs = param.args[0].getClass().getDeclaredFields();
+                            for (int i = 0; i < fs.length; i++) {
+                                Field f = fs[i];
+                                f.setAccessible(true); //设置些属性是可以访问的
+                                Object val = f.get(param.args[0]);//得到此属性的值
+                                String type = f.getType().toString();//得到此属性的类型
+                                XposedBridge.log("----------name  " + f.getName());
+                                XposedBridge.log("----------type  " + type);
+                                XposedBridge.log("----------val  " + val);
+                                if ("ticketColor".equals(f.getName())) {
+//                                    f.set(contract, contract);
+                                    setNotAccessibleProperty(param.args[0], "ticketColor", Color.BLUE+"");
+                                }
+                            }
+                        }
                     }
 
                     @Override
@@ -132,58 +240,18 @@ public class HookUtil implements IXposedHookLoadPackage{
                         Class clazz = param.thisObject.getClass();
 
                     }
-                });
-
-
-
-                //注意，这儿generateShuttleTicket 是静态方法
-                Method m = XposedHelpers.findMethodExact(ShuttleLine, "generateShuttleTicket", ShuttleLine);
-                XposedBridge.hookMethod(m, new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        XposedBridge.log("generateShuttleTicket method:"+ param.args[0]);
-                        if(param.args[0]!=null){
-                            Field[] fs = param.args[0].getClass().getDeclaredFields();
-                            for(int i = 0 ; i < fs.length; i++){
-                                Field f = fs[i];
-                                f.setAccessible(true); //设置些属性是可以访问的
-                                Object val = f.get(param.args[0]);//得到此属性的值
-                                String type = f.getType().toString();//得到此属性的类型
-                            }
-                        }
-                        super.beforeHookedMethod(param);
-                    }
-                });
-//            	 XposedHelpers.findAndHookMethod(DisplayShuttleTicket, "generateShuttleTicket", ShuttleLine, new XC_MethodHook() {
-//
-//                     @Override
-//                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-//                    	 Class clazz = param.thisObject.getClass();
-//                         XposedBridge.log("display shuttleLine:"+ param.args[0]);
-//                         //给ShuttleLine参数设置Contract
-////                         param.args[0] = contract;
-//                     }
-//
-//                     @Override
-//                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-//                         Class clazz = param.thisObject.getClass();
-//                         
-//                     }
-//                 });
+                });*/
             }
-
         });
-
-
     }
+
     /**
      * 对给定对象obj的propertyName指定的成员变量进行赋值
      * 赋值为value所指定的值
-     *
+     * <p>
      * 该方法可以访问私有成员
      */
-    public static void setNotAccessibleProperty(Object obj, String propertyName, Object value) throws Exception
-    {
+    public static void setNotAccessibleProperty(Object obj, String propertyName, Object value) throws Exception {
         Class<?> clazz = obj.getClass();
         Field field = clazz.getDeclaredField(propertyName);
         //赋值前将该成员变量的访问权限打开
