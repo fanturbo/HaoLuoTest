@@ -21,7 +21,7 @@
 		<!-- 模块描述 -->
     	<meta-data
         	android:name="xposeddescription"
-        	android:value="登录hook例子！" />
+        	android:value="哈罗班车5.0版本！" />
 		<!-- 最低版本号 -->
     	<meta-data
         	android:name="xposedminversion"
